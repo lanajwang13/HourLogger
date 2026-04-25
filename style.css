@@ -411,3 +411,44 @@ tbody tr:nth-child(even) { background:var(--color-surface-2); }
 #log .table-wrap {
   width: 100%;
 }
+
+@media (max-width: 680px) {
+  .page {
+    padding: var(--space-4) var(--space-3);
+  }
+
+  .hero-copy,
+  .card {
+    padding: var(--space-5) var(--space-4);
+  }
+
+  .stats {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+
+  .stat {
+    padding: var(--space-4);
+  }
+
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-strip {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  /* Make buttons a bit easier to tap */
+  .btn,
+  .menu-toggle,
+  .theme-toggle,
+  .time-toggle {
+    padding: .8rem 1rem;
+  }
+
+  /* Compact header when very narrow */
+  .nav-links {
+    gap: .5rem;
+  }
+}
