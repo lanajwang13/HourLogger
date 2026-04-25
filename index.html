@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<button
+  class="theme-toggle time-toggle"
+  type="button"
+  id="timeFormatToggle"
+  aria-label="Switch time format">
+  Now: 12hr
+</button>
+
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Grading Hours Tracker</title>
+  <link rel="preconnect" href="https://api.fontshare.com" />
+  <link
+    href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="page">
+    <header class="nav">
+      <div class="brand">
+        <svg
+          viewBox="0 0 64 64"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="3.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <rect x="10" y="12" width="44" height="40" rx="10"></rect>
+          <path d="M21 24h22M21 32h14M21 40h22"></path>
+          <path d="M44 16v32"></path>
+        </svg>
+        <div>
+          <div class="brand-title">Grading Hours Tracker</div>
+          <div class="brand-sub">Simple tool to assist in logging hours for payroll.</div>
+        </div>
+      </div>
+      <div class="nav-links" aria-label="Sections">
+        <a class="nav-link" href="#main">Add Session</a>
+        <a class="nav-link" href="#log">Session Log</a>
+        <a class="nav-link" href="#calendar">Calendar</a>
+        <a class="nav-link" href="#totals">Payroll Totals</a>
+        <button
+          class="theme-toggle"
+          type="button"
+          data-theme-toggle
+          aria-label="Switch color mode"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="hero">
+        <section class="panel card">
+          <h2 class="section-title">Add a session</h2>
+          <p class="muted" style="margin-top:.35rem; margin-bottom:1rem;">
+            Add the date, start and end time, and any relevant details such as papers graded or meeting type.
+          </p>
+          <form id="entryForm">
+            <div class="grid-2">
+              <div class="field">
+                <label for="entryType">Session type</label>
+                <select id="entryType" required>
+                  <option value="">Choose type…</option>
+                  <option value="grading">Grading</option>
+                  <option value="lecture">Lecture (recurring)</option>
+                  <option value="meeting">Meeting</option>
+                </select>
+              </div>
+              <div class="field" id="singleDateField">
+                <label for="entryDate">Calendar date</label>
+                <input id="entryDate" type="date" />
+              </div>
+            </div>
+
+            <!-- Multi-day picker: only shown for "lecture" -->
+            <div id="multiDayField" style="margin-top:1rem; display:none;">
+              <div class="field">
+                <label>Lecture dates <span class="muted" style="font-weight:400;">(select all that apply in this pay period)</span></label>
+                <div class="hint" style="margin-bottom:.5rem;">Click days in the week strip below, or add dates individually.</div>
+                <div id="selectedDatesChips" class="selected-dates-chips"></div>
+                <div class="multi-date-actions">
+                  <input id="manualDateAdd" type="date" style="max-width:180px;" />
+                  <button class="btn btn-secondary" type="button" id="addManualDateBtn">Add date</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid-2" style="margin-top:1rem;">
+              <div class="field">
+                <label for="startTime">Start time</label>
+                <input id="startTime" type="time" required />
+              </div>
+              <div class="field">
+                <label for="endTime">End time</label>
+                <input id="endTime" type="time" required />
+              </div>
+            </div>
+
+            <!-- Only shown for "grading" -->
+            <div class="field" id="papersField" style="margin-top:1rem; display:none;">
+              <label for="papersGraded">Papers graded</label>
+              <input id="papersGraded" type="number" min="0" step="1" value="0" />
+            </div>
+
+            <div class="field" style="margin-top:1rem;">
+              <label for="notes">Notes</label>
+              <textarea
+                id="notes"
+                rows="3"
+                placeholder="Optional: assignment, meeting topic, or lecture details"
+              ></textarea>
+              <div class="hint">
+                Input info such as assignment name or meeting topic | Note down entries for review
+              </div>
+            </div>
+
+            <div class="actions">
+              <button class="btn btn-primary" type="submit">Save session</button>
+              <button class="btn btn-secondary" type="button" id="fillNowBtn">
+                Use current time
+              </button>
+              <button class="btn btn-secondary" type="button" id="exportBtn">
+                Export CSV
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <article class="panel hero-copy">
+          <span class="eyebrow">Time log for grading</span>
+          <h1>Tracking Overview.</h1>
+          <p>
+            Here are your total stats! 
+            <br><br>To see estimated pay for a certain period, see "Payroll Totals" widget. <br><br>
+          </p>
+          <div class="stats">
+            <div class="stat">
+              <div class="stat-label">Total time</div>
+              <div class="stat-value" id="totalDuration">0h 0m</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Papers graded</div>
+              <div class="stat-value" id="totalPapers">0</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Avg / paper</div>
+              <div class="stat-value" id="avgPerPaper">0m</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Lectures</div>
+              <div class="stat-value" id="totalLectures">0</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Meetings</div>
+              <div class="stat-value" id="totalMeetings">0</div>
+            </div>
+          </div>
+        </article>
+
+        <aside class="panel card quick-panel">
+          <span class="pill">About</span>
+          <h2 class="section-title">General Info</h2>
+          <p class="muted">
+            Widgets are ordered according to importance, with "Add a session" and "Tracking Overview" on 
+            top for easy access, and more specific summarizing elements below. The grading partner is considered
+            semi-essential :]
+          </p>
+          <div class="summary-list">
+            <div class="summary-item"><span>Current date</span><strong id="activeDateLabel">Today</strong></div>
+            <div class="summary-item"><span>Permanent save</span><strong id="storageStatus">On</strong></div>
+            <div class="summary-item"><span>Export format</span><strong>CSV</strong></div>
+          </div>
+          <p class="storage-note">
+            Entries now save in your browser with localStorage, so they remain after refresh or reopening
+            the page on the same browser and device.
+          </p>
+        </aside>
+
+        <!-- Grading partner panel with image upload -->
+        <aside class="panel card quick-panel">
+          <span class="pill">Grading partner:</span>
+          <div class="hero-copy" style="padding: 0; border: 0; background: transparent;">
+            <img
+              id="partnerImg"
+              src="friend.gif"
+              alt="Grading partner"
+              style="width: 100%; border-radius: var(--radius-lg); display:block;"
+            />
+          </div>
+          <p class="muted">Friend to help with the work load. Teamwork!</p>
+          <div class="partner-upload-row">
+            <label class="btn btn-secondary partner-upload-label" for="partnerImgInput">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Upload image
+            </label>
+            <input id="partnerImgInput" type="file" accept="image/*" style="display:none;" />
+            <button class="btn btn-secondary" id="resetPartnerImg" type="button" style="display:none;">Reset</button>
+          </div>
+        </aside>
+      </section>
+
+      <section id="log" class="main-section panel card">
+        <h2 class="section-title">Session log</h2>
+        <p class="muted" style="margin-top:.35rem; margin-bottom:1rem;">
+            Review every grading block here, then export if needed.
+        </p>
+        <div id="emptyState" class="empty">
+            No grading sessions yet. Add your first entry above.
+        </div>
+        <div id="tableWrap" class="table-wrap" hidden>
+            <table>
+            <thead>
+                <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Start</th>
+                <th>End</th>
+                <th>Duration</th>
+                <th>Notes</th>
+                <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="logBody"></tbody>
+            </table>
+        </div>
+      </section>
+
+      <section class="subgrid main-section">
+        <article id="calendar" class="panel card">
+          <h2 class="section-title">Calendar</h2>
+          <p class="muted" style="margin-top:.35rem; margin-bottom:1rem;">
+            A compact week view helps connect your grading time to the day you worked, similar to calendar‑based
+            time trackers. Click a day to add it as a lecture date when in multi-day mode.
+          </p>
+          <div class="calendar-strip" id="calendarStrip"></div>
+        </article>
+        <article id="totals" class="panel card">
+          <h2 class="section-title">Payroll totals</h2>
+          <p class="muted" style="margin-top:.35rem; margin-bottom:1rem;">
+            Timesheet apps commonly emphasize total‑hour calculations and exportable records so payroll
+            handoff is easier.
+          </p>
+
+          <div class="summary-list">
+            <div class="summary-item"><span>This week hours</span><strong id="weekDuration">0h 0m</strong></div>
+            <div class="summary-item"><span>This week papers</span><strong id="weekPapers">0</strong></div>
+            <div class="summary-item"><span>Total entries</span><strong id="entryCount">0</strong></div>
+          </div>
+
+          <div class="field" style="margin-top:1.25rem;">
+            <label for="hourlyRate">Hourly rate ($)</label>
+            <input
+              id="hourlyRate"
+              type="number"
+              min="0.01"
+              step="0.01"
+              placeholder="e.g. 25.00"
+            />
+          </div>
+
+          <div class="field" style="margin-top:.75rem;">
+            <label for="payFromDate">Start from date (optional)</label>
+            <input id="payFromDate" type="date" />
+            <div class="hint">Leave empty to calculate from all sessions.</div>
+          </div>
+
+          <!-- estimated pay display -->
+          <div class="estimated-pay-block">
+            <div class="estimated-pay-label">Estimated pay for selected sessions</div>
+            <div class="estimated-pay-value" id="estimatedPay">$0.00</div>
+          </div>
+
+          <div class="actions" style="margin-top:1rem;">
+            <button class="btn btn-danger" type="button" id="clearBtn">
+              Clear all entries
+            </button>
+          </div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const STORAGE_KEY         = 'grading-hours-tracker-v2';
+    const PAYROLL_STORAGE_KEY = 'grading-hours-payroll-v1';
+    const PARTNER_IMG_KEY     = 'grading-partner-img-v1';
+    const state = { entries: [], selectedLectureDates: [] };
+
+    // Element refs
+    const form              = document.getElementById('entryForm');
+    const entryDate         = document.getElementById('entryDate');
+    const startTime         = document.getElementById('startTime');
+    const endTime           = document.getElementById('endTime');
+    const papersGraded      = document.getElementById('papersGraded');
+    const notes             = document.getElementById('notes');
+    const logBody           = document.getElementById('logBody');
+    const emptyState        = document.getElementById('emptyState');
+    const tableWrap         = document.getElementById('tableWrap');
+    const totalDuration     = document.getElementById('totalDuration');
+    const totalPapers       = document.getElementById('totalPapers');
+    const avgPerPaper       = document.getElementById('avgPerPaper');
+    const weekDuration      = document.getElementById('weekDuration');
+    const weekPapers        = document.getElementById('weekPapers');
+    const entryCount        = document.getElementById('entryCount');
+    const calendarStrip     = document.getElementById('calendarStrip');
+    const activeDateLabel   = document.getElementById('activeDateLabel');
+    const storageStatus     = document.getElementById('storageStatus');
+    const entryType         = document.getElementById('entryType');
+    const papersField       = document.getElementById('papersField');
+    const singleDateField   = document.getElementById('singleDateField');
+    const multiDayField     = document.getElementById('multiDayField');
+    const selectedDatesChips = document.getElementById('selectedDatesChips');
+    const totalLectures     = document.getElementById('totalLectures');
+    const totalMeetings     = document.getElementById('totalMeetings');
+
+    // ── Partner image upload ──
+    const partnerImg        = document.getElementById('partnerImg');
+    const partnerImgInput   = document.getElementById('partnerImgInput');
+    const resetPartnerBtn   = document.getElementById('resetPartnerImg');
+
+    let use12HourTime = false;
+    const timeFormatToggle = document.getElementById('timeFormatToggle');
+
+    function updateTimeToggleLabel() {
+    timeFormatToggle.textContent = use12HourTime ? 'Now: 24hr' : 'Now: 12hr';
+    }
+
+    function formatClockTime(timeStr) {
+    if (!timeStr) return '—';
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    const date = new Date();
+    date.setHours(hours, minutes, 0, 0);
+
+    return date.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: !use12HourTime
+    });
+    }
+
+    timeFormatToggle.addEventListener('click', () => {
+    use12HourTime = !use12HourTime;
+    updateTimeToggleLabel();
+    renderTable();
+    });
+
+    updateTimeToggleLabel();
+
+
+function loadPartnerImg() {
+      try {
+        const saved = localStorage.getItem(PARTNER_IMG_KEY);
+        if (saved) {
+          partnerImg.src = saved;
+          resetPartnerBtn.style.display = '';
+        }
+      } catch (_) {}
+    }
+
+    partnerImgInput.addEventListener('change', () => {
+      const file = partnerImgInput.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target.result;
+        partnerImg.src = dataUrl;
+        resetPartnerBtn.style.display = '';
+        try { localStorage.setItem(PARTNER_IMG_KEY, dataUrl); } catch (_) {}
+      };
+      reader.readAsDataURL(file);
+    });
+
+    resetPartnerBtn.addEventListener('click', () => {
+      partnerImg.src = 'friend.gif';
+      resetPartnerBtn.style.display = 'none';
+      partnerImgInput.value = '';
+      try { localStorage.removeItem(PARTNER_IMG_KEY); } catch (_) {}
+    });
+
+    // ── Session type toggling ──
+    entryType.addEventListener('change', () => {
+      const val = entryType.value;
+      papersField.style.display = val === 'grading' ? 'block' : 'none';
+
+      if (val === 'lecture') {
+        singleDateField.style.display = 'none';
+        entryDate.removeAttribute('required');
+        multiDayField.style.display = 'block';
+      } else {
+        singleDateField.style.display = '';
+        entryDate.setAttribute('required', '');
+        multiDayField.style.display = 'none';
+        state.selectedLectureDates = [];
+        renderSelectedDatesChips();
+      }
+      renderCalendar();
+    });
+
+    // ── Multi-day date management ──
+    function addLectureDate(dateStr) {
+      if (!dateStr) return;
+      if (!state.selectedLectureDates.includes(dateStr)) {
+        state.selectedLectureDates.push(dateStr);
+        state.selectedLectureDates.sort();
+        renderSelectedDatesChips();
+        renderCalendar();
+      }
+    }
+
+    function removeLectureDate(dateStr) {
+      state.selectedLectureDates = state.selectedLectureDates.filter(d => d !== dateStr);
+      renderSelectedDatesChips();
+      renderCalendar();
+    }
+
+    function renderSelectedDatesChips() {
+      selectedDatesChips.innerHTML = '';
+      if (state.selectedLectureDates.length === 0) {
+        selectedDatesChips.innerHTML = '<span class="hint">No dates selected yet.</span>';
+        return;
+      }
+      state.selectedLectureDates.forEach(dateStr => {
+        const chip = document.createElement('span');
+        chip.className = 'date-chip';
+        chip.innerHTML = `${formatShortDate(dateStr)} <button type="button" aria-label="Remove ${dateStr}" data-remove="${dateStr}">×</button>`;
+        chip.querySelector('button').addEventListener('click', () => removeLectureDate(dateStr));
+        selectedDatesChips.appendChild(chip);
+      });
+    }
+
+    document.getElementById('addManualDateBtn').addEventListener('click', () => {
+      const val = document.getElementById('manualDateAdd').value;
+      if (val) addLectureDate(val);
+    });
+
+    function initTheme() {
+      const root = document.documentElement;
+      const btn = document.querySelector('[data-theme-toggle]');
+      let theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      root.setAttribute('data-theme', theme);
+      const setIcon = () => {
+        btn.innerHTML = theme === 'dark'
+          ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path></svg>'
+          : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
+      };
+      setIcon();
+      btn.addEventListener('click', () => {
+        theme = theme === 'dark' ? 'light' : 'dark';
+        root.setAttribute('data-theme', theme);
+        setIcon();
+      });
+    }
+
+    function todayString() {
+      return new Date().toISOString().split('T')[0];
+    }
+
+    function saveEntries() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state.entries));
+        storageStatus.textContent = 'On';
+      } catch (error) {
+        storageStatus.textContent = 'Off';
+      }
+    }
+
+    function loadEntries() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        state.entries = raw ? JSON.parse(raw) : [];
+        storageStatus.textContent = 'On';
+      } catch (error) {
+        state.entries = [];
+        storageStatus.textContent = 'Off';
+      }
+    }
+
+    function timeToMinutes(value) {
+      const [h, m] = value.split(':').map(Number);
+      return h * 60 + m;
+    }
+
+    function minutesToLabel(total) {
+      const hours = Math.floor(total / 60);
+      const minutes = total % 60;
+      return `${hours}h ${minutes}m`;
+    }
+
+    function formatDate(dateStr) {
+      return new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+    }
+
+    function formatShortDate(dateStr) {
+      return new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+      });
+    }
+
+    function getDurationMinutes(start, end) {
+      const startMin = timeToMinutes(start);
+      const endMin = timeToMinutes(end);
+      if (endMin < startMin) return (24 * 60 - startMin) + endMin;
+      return endMin - startMin;
+    }
+
+    function getWeekBounds() {
+      const now = new Date();
+      const dayOfWeek = now.getDay();
+      const diffToMonday = (dayOfWeek + 6) % 7;
+      const monday = new Date(now);
+      monday.setDate(now.getDate() - diffToMonday);
+      monday.setHours(0, 0, 0, 0);
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      sunday.setHours(23, 59, 59, 999);
+      return { monday, sunday };
+    }
+
+    function updateSummaries() {
+      const totalMinutes = state.entries.reduce((sum, e) => sum + e.durationMinutes, 0);
+      const papers = state.entries.reduce((sum, e) => sum + e.papers, 0);
+
+      totalDuration.textContent = minutesToLabel(totalMinutes);
+      totalPapers.textContent = papers;
+      avgPerPaper.textContent = papers ? `${Math.round(totalMinutes / papers)}m` : '0m';
+
+      totalLectures.textContent = state.entries.filter(e => e.type === 'lecture').length;
+      totalMeetings.textContent = state.entries.filter(e => e.type === 'meeting').length;
+      entryCount.textContent = state.entries.length;
+
+      const { monday, sunday } = getWeekBounds();
+      const weekEntries = state.entries.filter(entry => {
+        const d = new Date(entry.date + 'T00:00:00');
+        return d >= monday && d <= sunday;
+      });
+      weekDuration.textContent = minutesToLabel(weekEntries.reduce((s, e) => s + e.durationMinutes, 0));
+      weekPapers.textContent   = weekEntries.reduce((s, e) => s + e.papers, 0);
+    }
+
+    function renderCalendar() {
+      const isLectureMode = entryType.value === 'lecture';
+      // For display, use first selected lecture date, today, or the single date picker value
+      const baseDate = isLectureMode
+        ? (state.selectedLectureDates[0] || todayString())
+        : (entryDate.value || todayString());
+
+      const selected = isLectureMode ? null : (entryDate.value || todayString());
+      if (!isLectureMode) activeDateLabel.textContent = formatShortDate(baseDate);
+      else activeDateLabel.textContent = state.selectedLectureDates.length
+        ? `${state.selectedLectureDates.length} lecture day(s)`
+        : 'Lecture mode';
+
+      const base = new Date(baseDate + 'T00:00:00');
+      const monday = new Date(base);
+      const diff = (monday.getDay() + 6) % 7;
+      monday.setDate(base.getDate() - diff);
+      calendarStrip.innerHTML = '';
+
+      for (let i = 0; i < 7; i++) {
+        const dayDate = new Date(monday);
+        dayDate.setDate(monday.getDate() + i);
+        const key = dayDate.toISOString().split('T')[0];
+        const entries = state.entries.filter(entry => entry.date === key);
+        const papers = entries.reduce((sum, e) => sum + e.papers, 0);
+        const minutes = entries.reduce((sum, e) => sum + e.durationMinutes, 0);
+
+        const isSelectedLecture = isLectureMode && state.selectedLectureDates.includes(key);
+        const isSelectedSingle  = !isLectureMode && key === selected;
+
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'day-chip';
+
+        if (isSelectedLecture) {
+          item.style.borderColor = 'var(--color-primary)';
+          item.style.background  = 'var(--color-primary-soft)';
+        } else if (isSelectedSingle) {
+          item.style.borderColor = 'var(--color-primary)';
+          item.style.background  = 'var(--color-primary-soft)';
+        } else {
+          item.style.borderColor = 'var(--color-border)';
+          item.style.background  = 'var(--color-surface-2)';
+        }
+
+        item.innerHTML = `<strong>${dayDate.toLocaleDateString(undefined, { weekday: 'short' })}</strong><span>${dayDate.getDate()}</span><span>${papers} papers</span><span>${minutes ? minutesToLabel(minutes) : 'No log'}</span>`;
+
+        item.addEventListener('click', () => {
+          if (isLectureMode) {
+            if (state.selectedLectureDates.includes(key)) {
+              removeLectureDate(key);
+            } else {
+              addLectureDate(key);
+            }
+          } else {
+            entryDate.value = key;
+            renderCalendar();
+          }
+        });
+        calendarStrip.appendChild(item);
+      }
+    }
+
+    function renderTable() {
+      const hasEntries = state.entries.length > 0;
+      emptyState.hidden = hasEntries;
+      tableWrap.hidden = !hasEntries;
+      logBody.innerHTML = '';
+
+      state.entries
+        .slice()
+        .sort((a, b) => `${b.date} ${b.start}`.localeCompare(`${a.date} ${a.start}`))
+        .forEach(entry => {
+          const tr = document.createElement('tr');
+          tr.dataset.id = entry.id;
+
+          const typeLabel =
+            entry.type === 'grading' ? 'Grading'
+            : entry.type === 'lecture' ? 'Lecture'
+            : entry.type === 'meeting' ? 'Meeting'
+            : '—';
+
+          const isEditMode = entry._editing === true;
+
+          if (!isEditMode) {
+            tr.innerHTML = `
+              <td><span class="tag">${formatDate(entry.date)}</span></td>
+              <td>${typeLabel}</td>
+              <td>${formatClockTime(entry.start)}</td>
+              <td>${formatClockTime(entry.end)}</td>
+              <td>${minutesToLabel(entry.durationMinutes)}</td>
+              <td class="muted">${entry.notes || '—'}</td>
+              <td>
+                <div class="menu-container">
+                  <button class="btn menu-toggle" type="button" aria-expanded="false" aria-label="Actions">⋮</button>
+                  <div class="menu-dropdown" role="menu" hidden>
+                    <button class="menu-item" type="button" data-action="edit">✏️ Edit</button>
+                    <button class="menu-item" type="button" data-action="more-info">ℹ️ More info</button>
+                    <div class="menu-divider"></div>
+                    <button class="menu-item menu-item--danger" type="button" data-action="delete">🗑 Delete</button>
+                  </div>
+                </div>
+              </td>
+            `;
+          } else {
+            tr.innerHTML = `
+              <td><input class="input-date" type="date" value="${entry.date}"></td>
+              <td><span class="muted small">${typeLabel}</span></td>
+              <td><input class="input-time" type="time" value="${entry.start}"></td>
+              <td><input class="input-time" type="time" value="${entry.end}"></td>
+              <td class="small">${minutesToLabel(entry.durationMinutes)}</td>
+              <td>
+                <input class="input-notes small" type="text" value="${entry.notes || ''}">
+              </td>
+              <td>
+                <div class="edit-actions">
+                  <button class="btn btn-primary save-btn" type="button">Save</button>
+                  <button class="btn btn-secondary cancel-btn" type="button">Cancel</button>
+                </div>
+              </td>
+            `;
+          }
+
+          logBody.appendChild(tr);
+        });
+    }
+
+    logBody.addEventListener('click', (e) => {
+      const clicked = e.target;
+      const tr = clicked.closest('tr');
+      if (!tr) return;
+
+      const id = tr.dataset.id;
+      const entry = state.entries.find(en => en.id === id);
+      if (!entry) return;
+
+      if (clicked.matches('.menu-toggle')) {
+        const dropdown = tr.querySelector('.menu-dropdown');
+        const wasExpanded = clicked.getAttribute('aria-expanded') === 'true';
+        logBody.querySelectorAll('.menu-toggle').forEach(btn => {
+          const otherDropdown = btn.closest('tr')?.querySelector('.menu-dropdown');
+          if (otherDropdown && otherDropdown !== dropdown) {
+            btn.setAttribute('aria-expanded', 'false');
+            otherDropdown.hidden = true;
+          }
+        });
+        clicked.setAttribute('aria-expanded', !wasExpanded);
+        dropdown.hidden = wasExpanded;
+        e.stopPropagation();
+        return;
+      }
+
+      if (clicked.matches('[data-action="more-info"]')) {
+        const typeLabel =
+          entry.type === 'grading' ? 'Grading'
+          : entry.type === 'lecture' ? 'Lecture'
+          : entry.type === 'meeting' ? 'Meeting'
+          : '—';
+
+        const rate = entry.papers > 0
+          ? `${Math.round(entry.durationMinutes / entry.papers)} min/paper`
+          : '—';
+
+        let moreInfo = document.getElementById('more-info-modal');
+        if (moreInfo && moreInfo.dataset.for === id) {
+          document.body.removeChild(moreInfo);
+          return;
+        }
+        document.querySelectorAll('#more-info-modal').forEach(m => document.body.removeChild(m));
+
+        moreInfo = document.createElement('div');
+        moreInfo.id = 'more-info-modal';
+        moreInfo.dataset.for = id;
+        moreInfo.style.cssText = `
+          position:fixed;top:30%;left:50%;transform:translateX(-50%);
+          background:var(--color-surface);border:1px solid var(--color-border);
+          border-radius:var(--radius-lg);box-shadow:var(--shadow-md);
+          padding:1.25rem;z-index:200;min-width:300px;max-width:500px;
+        `;
+        moreInfo.innerHTML = `
+          <h3 style="margin:0 0 .5rem 0; font-size:1.1rem;">Session details</h3>
+          <div class="summary-list" style="margin-top:.5rem;">
+            <div class="summary-item"><span>Type</span><strong>${typeLabel}</strong></div>
+            <div class="summary-item"><span>Papers graded</span><strong>${entry.papers > 0 ? entry.papers : '—'}</strong></div>
+            <div class="summary-item"><span>Rate</span><strong>${rate}</strong></div>
+          </div>
+          <div style="margin-top:1rem;text-align:right;">
+            <button class="btn btn-secondary more-info-close" type="button">Back</button>
+          </div>
+        `;
+        document.body.appendChild(moreInfo);
+        moreInfo.querySelector('.more-info-close').addEventListener('click', () => document.body.removeChild(moreInfo));
+        const handleOutsideClick = (e) => {
+          if (!moreInfo.contains(e.target)) {
+            document.body.removeChild(moreInfo);
+            document.removeEventListener('click', handleOutsideClick);
+          }
+        };
+        setTimeout(() => document.addEventListener('click', handleOutsideClick), 0);
+        e.stopPropagation();
+        return;
+      }
+
+      if (clicked.matches('[data-action="edit"]')) {
+        entry._editing = true;
+        renderTable();
+        return;
+      }
+
+      if (clicked.matches('[data-action="delete"]')) {
+        state.entries = state.entries.filter(en => en.id !== id);
+        saveEntries();
+        renderTable();
+        updateSummaries();
+        return;
+      }
+
+      if (clicked.matches('.save-btn')) {
+        const dateInput  = tr.querySelector('.input-date');
+        const timeInputs = tr.querySelectorAll('.input-time');
+        const notesInput = tr.querySelector('.input-notes');
+        const date  = dateInput.value;
+        const start = timeInputs[0].value;
+        const end   = timeInputs[1].value;
+        const newNotes = notesInput.value.trim();
+        const durationMinutes = getDurationMinutes(start, end);
+        if (durationMinutes <= 0) {
+          alert('End time must be later than start time, or cross midnight.');
+          return;
+        }
+        Object.assign(entry, { date, start, end, durationMinutes, notes: newNotes });
+        delete entry._editing;
+        saveEntries();
+        renderTable();
+        updateSummaries();
+        renderCalendar();
+        return;
+      }
+
+      if (clicked.matches('.cancel-btn')) {
+        delete entry._editing;
+        renderTable();
+        return;
+      }
+    });
+
+    document.addEventListener('click', () => {
+      logBody.querySelectorAll('.menu-toggle[aria-expanded="true"]').forEach(btn => {
+        btn.setAttribute('aria-expanded', 'false');
+        const dropdown = btn.closest('tr')?.querySelector('.menu-dropdown');
+        if (dropdown) dropdown.hidden = true;
+      });
+    });
+
+    function renderAll() {
+      renderTable();
+      updateSummaries();
+      renderCalendar();
+      updateEstimatedPay();
+    }
+
+    function exportCsv() {
+      if (!state.entries.length) {
+        alert('Add at least one grading session before exporting.');
+        return;
+      }
+      const rows = [
+        ['Date', 'Type', 'Start Time', 'End Time', 'Duration Minutes', 'Papers Graded', 'Minutes per Paper', 'Notes'],
+        ...state.entries.map(entry => [
+          entry.date,
+          entry.type,
+          entry.start,
+          entry.end,
+          entry.durationMinutes,
+          entry.papers,
+          entry.papers ? (entry.durationMinutes / entry.papers).toFixed(2) : '',
+          entry.notes.replace(/\n/g, ' ')
+        ])
+      ];
+      const csv = rows.map(row => row.map(value => `"${String(value).replaceAll('"', '""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `grading-hours-${todayString()}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(link.href);
+    }
+
+    document.getElementById('fillNowBtn').addEventListener('click', () => {
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      if (entryType.value !== 'lecture') {
+        if (!entryDate.value) entryDate.value = todayString();
+        if (!startTime.value) startTime.value = `${hh}:${mm}`;
+        else endTime.value = `${hh}:${mm}`;
+        renderCalendar();
+      } else {
+        if (!startTime.value) startTime.value = `${hh}:${mm}`;
+        else endTime.value = `${hh}:${mm}`;
+      }
+    });
+
+    document.getElementById('exportBtn').addEventListener('click', exportCsv);
+
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      if (!state.entries.length) return;
+      if (confirm('Clear all saved grading entries?')) {
+        state.entries = [];
+        saveEntries();
+        renderAll();
+      }
+    });
+
+    entryDate.addEventListener('change', renderCalendar);
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const durationMinutes = getDurationMinutes(startTime.value, endTime.value);
+      if (durationMinutes <= 0) {
+        alert('End time must be later than start time, or cross midnight.');
+        return;
+      }
+
+      const type = entryType.value;
+      const papersVal = type === 'grading' ? (Number(papersGraded.value) || 0) : 0;
+
+      if (type === 'lecture') {
+        // Create one entry per selected date
+        if (state.selectedLectureDates.length === 0) {
+          alert('Please select at least one lecture date.');
+          return;
+        }
+        state.selectedLectureDates.forEach(dateStr => {
+          state.entries.push({
+            id: crypto.randomUUID(),
+            date: dateStr,
+            start: startTime.value,
+            end: endTime.value,
+            durationMinutes,
+            papers: 0,
+            notes: notes.value.trim(),
+            type: 'lecture'
+          });
+        });
+        state.selectedLectureDates = [];
+        renderSelectedDatesChips();
+      } else {
+        state.entries.push({
+          id: crypto.randomUUID(),
+          date: entryDate.value,
+          start: startTime.value,
+          end: endTime.value,
+          durationMinutes,
+          papers: papersVal,
+          notes: notes.value.trim(),
+          type
+        });
+      }
+
+      saveEntries();
+      form.reset();
+      entryDate.value = todayString();
+      papersGraded.value = 0;
+      entryType.value = '';
+      papersField.style.display = 'none';
+      singleDateField.style.display = '';
+      entryDate.setAttribute('required', '');
+      multiDayField.style.display = 'none';
+      renderAll();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    function savePayrollSettings() {
+      try {
+        const settings = {
+          hourlyRate: document.getElementById('hourlyRate').value,
+          payFromDate: document.getElementById('payFromDate').value,
+        };
+        localStorage.setItem(PAYROLL_STORAGE_KEY, JSON.stringify(settings));
+      } catch (_) {}
+    }
+
+    function loadPayrollSettings() {
+      try {
+        const raw = localStorage.getItem(PAYROLL_STORAGE_KEY);
+        if (!raw) return;
+        const { hourlyRate, payFromDate } = JSON.parse(raw);
+        if (hourlyRate)  document.getElementById('hourlyRate').value  = hourlyRate;
+        if (payFromDate) document.getElementById('payFromDate').value = payFromDate;
+      } catch (_) {}
+    }
+
+    function updateEstimatedPay() {
+      const hourlyRateStr = document.getElementById('hourlyRate').value;
+      const hourlyRate = Number(hourlyRateStr);
+      if (!hourlyRate || hourlyRate <= 0) {
+        document.getElementById('estimatedPay').textContent = '$0.00';
+        return;
+      }
+      const fromStr = document.getElementById('payFromDate').value;
+      const from = fromStr ? new Date(fromStr + 'T00:00:00') : null;
+      const minutes = state.entries
+        .filter(entry => {
+          if (!from) return true;
+          const d = new Date(entry.date + 'T00:00:00');
+          return d >= from;
+        })
+        .reduce((sum, entry) => sum + entry.durationMinutes, 0);
+      const hours = minutes / 60;
+      const total = hours * hourlyRate;
+      document.getElementById('estimatedPay').textContent = `$${total.toFixed(2)}`;
+    }
+
+    document.getElementById('hourlyRate').addEventListener('input', () => {
+      savePayrollSettings();
+      updateEstimatedPay();
+    });
+    document.getElementById('payFromDate').addEventListener('change', () => {
+      savePayrollSettings();
+      updateEstimatedPay();
+    });
+
+    // Init
+    entryDate.value = todayString();
+    papersGraded.value = 0;
+    initTheme();
+    loadEntries();
+    loadPayrollSettings();
+    loadPartnerImg();
+    renderSelectedDatesChips();
+    renderAll();
+  </script>
+</body>
+</html>
